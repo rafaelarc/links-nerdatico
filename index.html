@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nerdático</title>
+    <link rel="icon" type="image/png" href="imagens/favicon_2.png">
+    <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            max-width: 1000px;
+            margin: 20px auto 0;
+            gap: 25px; 
+        }
+        
+        @media (min-width: 1200px) {
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+        .post { 
+            height: 400px; 
+            background-size: cover; 
+            background-position: center; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            cursor: pointer; 
+            transition: transform 0.3s, box-shadow 0.3s; /* Transição suave para zoom e sombra */
+            position: relative; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Sombra base leve */
+            text-decoration: none;
+            color: inherit;
+        }
+        .post:hover { 
+            transform: scale(1.05); /* Zoom sutil mantido */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Sombra mais pronunciada no hover (leve) */
+        }
+        .post-footer { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: rgba(0, 0, 0, 0.8); /* Fundo preto semi-transparente */
+            color: white; 
+            padding: 20px; 
+            font-size: 14px; 
+            line-height: 1.2; /* Ajustado para quebras de linha */
+            min-height: 100px; /* Mínimo, expande se título longo */
+            display: flex; /* Para centralização flexível */
+            align-items: center; /* Centraliza verticalmente */
+            justify-content: center; /* Centraliza horizontalmente */
+            overflow: hidden;
+        }
+        .post-footer strong { 
+            text-transform: uppercase; /* Todo título em maiúsculas */
+            font-weight: bold; /* Negrito reforçado */
+            letter-spacing: 0.5px; /* Leve espaçamento para legibilidade */
+            text-align: center; /* Centraliza texto dentro do strong */
+            word-break: break-word; /* Quebra palavras longas para ajuste */
+            max-width: 100%; /* Garante ajuste à largura do footer */
+        }
+        h1 { 
+            text-align: center; 
+            color: #000000; 
+            font-family: 'Alfa Slab One', cursive;
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: #000000;
+            border-radius: 2px;
+        }
+        .loading { 
+            text-align: center; 
+            font-size: 18px; 
+            color: #666; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error { 
+            text-align: center; 
+            color: #d00; 
+            font-weight: bold; 
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        /* Dark mode styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        }
+        
+        body.dark-mode .container {
+            background: #ffffff;
+            color: #333333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        body.dark-mode h1 {
+            color: #000000;
+        }
+        
+        body.dark-mode .post-footer {
+            background: rgba(0, 0, 0, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Alternar tema">🌙</button>
+    <div class="container">
+        <h1>Nerdático</h1>
+        <div id="grid" class="grid"></div>
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <div>Carregando artigos...</div>
+        </div>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function loadArticlesFromRSS() {
+            const grid = document.getElementById('grid');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            
+            try {
+                // Proxy CORS para fetch do RSS XML
+                const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://nerdatico.com.br/rss.xml');
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Falha no proxy CORS');
+                
+                const data = await response.json();
+                const xmlText = data.contents;
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+                
+                // Extrai itens do RSS
+                const items = xmlDoc.querySelectorAll('item');
+                const articles = [];
+                
+                console.log(`Encontrados ${items.length} itens no RSS. Processando os 15 primeiros...`);
+                
+                for (let i = 0; i < Math.min(12, items.length); i++) {
+                    const item = items[i];
+                    
+                    // Título: Extrai e limpa HTML
+                    let title = item.querySelector('title')?.textContent || 'Título não disponível';
+                    title = title.replace(/<[^>]*>/g, '').trim(); // Remove tags HTML se houver
+                    const shortTitle = title.length > 80 ? title.substring(0, 80) + '...' : title;
+                    
+                    // Link: Garante absoluto
+                    let link = item.querySelector('link')?.textContent || '#';
+                    if (link && !link.startsWith('http')) link = 'https://nerdatico.com.br' + link;
+                    
+                    // Imagem: Método 1 - Prioridade para <enclosure> com type="image/*"
+                    let image = '';
+                    const enclosure = item.querySelector('enclosure');
+                    if (enclosure) {
+                        const encUrl = enclosure.getAttribute('url');
+                        const encType = enclosure.getAttribute('type');
+                        if (encUrl && encType && encType.startsWith('image/')) {
+                            image = encUrl;
+                            // Garante URL absoluta
+                            if (image.startsWith('//')) image = 'https:' + image;
+                            else if (image.startsWith('/')) image = 'https://nerdatico.com.br' + image;
+                            console.log(`Item ${i+1}: Extraída via enclosure: ${image} para "${shortTitle}"`);
+                        }
+                    }
+                    
+                    // Método 2 - Fallback para <description> (regex <img src>)
+                    if (!image) {
+                        image = extractImageFromDescription(item.querySelector('description')?.textContent);
+                    }
+                    
+                    // Método 3 - Fallback para <media:content>
+                    if (!image) {
+                        const mediaElements = item.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'content');
+                        if (mediaElements.length > 0) {
+                            image = mediaElements[0].getAttribute('url');
+                            if (image) {
+                                console.log(`Item ${i+1}: Extraída via media:content: ${image} para "${shortTitle}"`);
+                            }
+                        }
+                    }
+                    
+                    // Placeholder final se nada encontrado
+                    if (!image || image === '') {
+                        image = 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=300&h=400&fit=crop'; // Tema geek
+                        console.log(`Item ${i+1}: Usando placeholder para "${shortTitle}" (sem enclosure válido)`);
+                    }
+                    
+                    articles.push({ title: shortTitle, link, image });
+                }
+                
+                if (articles.length === 0) throw new Error('Nenhum artigo encontrado no RSS');
+                
+                console.log(`Sucesso: ${articles.length} artigos carregados com imagens.`);
+                
+                // Renderiza os artigos
+                articles.forEach(article => {
+                    const post = document.createElement('a');
+                    post.href = article.link;
+                    post.target = '_blank';
+                    post.className = 'post';
+                    post.style.backgroundImage = `url(${article.image})`;
+                    post.setAttribute('aria-label', `Artigo: ${article.title}`);
+                    post.innerHTML = `<div class="post-footer"><strong>${article.title}</strong></div>`;
+                    grid.appendChild(post);
+                });
+                
+            } catch (error) {
+                console.error('Erro no fetch/parse RSS:', error);
+                errorDiv.textContent = `Erro ao carregar RSS: ${error.message}. Verifique o console para detalhes.`;
+                errorDiv.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Função auxiliar: Extrai src da primeira <img> na description HTML (fallback)
+        function extractImageFromDescription(description) {
+            if (!description) return '';
+            
+            // Regex para capturar src de <img src="URL">
+            const imgMatch = description.match(/<img[^>]+src=["']([^"']+\.(?:jpg|jpeg|png|gif|webp))["'][^>]*>/i);
+            if (imgMatch && imgMatch[1]) {
+                let imgUrl = imgMatch[1];
+                // Garante URL absoluta
+                if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+                else if (imgUrl.startsWith('/')) imgUrl = 'https://nerdatico.com.br' + imgUrl;
+                console.log(`Fallback: Extraída via description: ${imgUrl}`);
+                return imgUrl;
+            }
+            return '';
+        }
+        
+        // Função para alternar tema
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggle = document.querySelector('.theme-toggle');
+            
+            body.classList.toggle('dark-mode');
+            
+            if (body.classList.contains('dark-mode')) {
+                themeToggle.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                themeToggle.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        
+        // Carrega tema salvo
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeToggle = document.querySelector('.theme-toggle');
+            
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeToggle.textContent = '☀️';
+            }
+        }
+        
+        // Inicia o carregamento
+        loadTheme();
+        loadArticlesFromRSS();
+    </script>
+</body>
+</html>
