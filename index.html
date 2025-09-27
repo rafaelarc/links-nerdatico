@@ -190,7 +190,11 @@
             <div class="loading-spinner"></div>
             <div>Carregando artigos...</div>
         </div>
-        <div id="error" class="error" style="display: none;"></div>
+        <div id="error" class="error" style="display: none;">
+            <button onclick="retryLoad()" style="margin-top: 10px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                🔄 Tentar Novamente
+            </button>
+        </div>
     </div>
 
     <script>
@@ -199,7 +203,7 @@
             const loading = document.getElementById('loading');
             const errorDiv = document.getElementById('error');
             
-            // Lista de proxies CORS como fallback
+            // Lista de proxies CORS para tentar
             const proxies = [
                 'https://api.allorigins.win/get?url=',
                 'https://cors-anywhere.herokuapp.com/',
@@ -211,24 +215,6 @@
             let xmlText = '';
             let lastError = null;
             
-            // Função para fetch com timeout
-            const fetchWithTimeout = async (url, timeout = 10000) => {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), timeout);
-                
-                try {
-                    const response = await fetch(url, { 
-                        signal: controller.signal,
-                        mode: 'cors'
-                    });
-                    clearTimeout(timeoutId);
-                    return response;
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    throw error;
-                }
-            };
-            
             // Tenta cada proxy até um funcionar
             for (let i = 0; i < proxies.length; i++) {
                 try {
@@ -238,15 +224,15 @@
                     if (proxies[i].includes('allorigins.win')) {
                         // allorigins.win retorna JSON com contents
                         const proxyUrl = proxies[i] + encodeURIComponent(rssUrl);
-                        response = await fetchWithTimeout(proxyUrl, 15000);
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        response = await fetch(proxyUrl);
+                        if (!response.ok) throw new Error(`Proxy ${i + 1} falhou: ${response.status}`);
                         const data = await response.json();
                         xmlText = data.contents;
                     } else {
                         // Outros proxies retornam XML diretamente
                         const proxyUrl = proxies[i] + encodeURIComponent(rssUrl);
-                        response = await fetchWithTimeout(proxyUrl, 15000);
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        response = await fetch(proxyUrl);
+                        if (!response.ok) throw new Error(`Proxy ${i + 1} falhou: ${response.status}`);
                         xmlText = await response.text();
                     }
                     
@@ -257,22 +243,13 @@
                     console.warn(`Proxy ${i + 1} falhou:`, error.message);
                     lastError = error;
                     if (i === proxies.length - 1) {
-                        // Último proxy falhou, tenta requisição direta
-                        try {
-                            console.log('Tentando requisição direta...');
-                            const response = await fetchWithTimeout(rssUrl, 10000);
-                            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                            xmlText = await response.text();
-                            console.log('Requisição direta funcionou!');
-                        } catch (directError) {
-                            throw new Error(`Todos os proxies falharam. Último erro: ${lastError.message}. Erro direto: ${directError.message}`);
-                        }
+                        throw new Error(`Todos os proxies falharam. Último erro: ${lastError.message}`);
                     }
                 }
             }
             
             if (!xmlText) {
-                throw new Error('Não foi possível obter o conteúdo RSS de nenhum proxy');
+                throw new Error('Nenhum proxy conseguiu carregar o RSS');
             }
             
             try {
@@ -330,7 +307,7 @@
                     
                     // Placeholder final se nada encontrado
                     if (!image || image === '') {
-                        image = 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=300&h=400&fit=crop'; // Tema geek
+                        image = 'imagens/error.png'; // Tema geek
                         console.log(`Item ${i+1}: Usando placeholder para "${shortTitle}" (sem enclosure válido)`);
                     }
                     
@@ -355,87 +332,22 @@
                 
             } catch (error) {
                 console.error('Erro no fetch/parse RSS:', error);
-                
-                // Fallback: mostra dados estáticos se todos os proxies falharem
-                if (error.message.includes('Todos os proxies falharam')) {
-                    console.log('Tentando carregar dados estáticos como fallback...');
-                    loadStaticFallback();
-                } else {
-                    errorDiv.innerHTML = `
-                        <div style="margin-bottom: 20px;">
-                            <strong>Erro ao carregar RSS:</strong> ${error.message}
-                        </div>
-                        <div style="font-size: 14px; color: #666;">
-                            <p>Possíveis soluções:</p>
-                            <ul style="text-align: left; max-width: 500px; margin: 10px auto;">
-                                <li>Verifique sua conexão com a internet</li>
-                                <li>Recarregue a página (F5)</li>
-                                <li>Verifique se o site nerdatico.com.br está acessível</li>
-                                <li>Desative temporariamente extensões de bloqueio de anúncios</li>
-                            </ul>
-                        </div>
-                    `;
-                    errorDiv.style.display = 'block';
-                }
+                errorDiv.innerHTML = `
+                    <div style="color: #d00; font-weight: bold; margin-bottom: 10px;">
+                        Erro ao carregar RSS: ${error.message}
+                    </div>
+                    <div style="color: #666; font-size: 14px;">
+                        Possíveis soluções:<br>
+                        • Verifique sua conexão com a internet<br>
+                        • Tente recarregar a página<br>
+                        • Verifique se não há bloqueios de firewall/proxy<br>
+                        • Abra o console do navegador (F12) para mais detalhes
+                    </div>
+                `;
+                errorDiv.style.display = 'block';
             } finally {
                 loading.style.display = 'none';
             }
-        }
-        
-        // Função de fallback com dados estáticos
-        function loadStaticFallback() {
-            const grid = document.getElementById('grid');
-            const errorDiv = document.getElementById('error');
-            
-            const fallbackArticles = [
-                {
-                    title: "Nerdático - Site Temporariamente Indisponível",
-                    link: "https://nerdatico.com.br",
-                    image: "imagens/warning.png"
-                },
-                {
-                    title: "Tente recarregar a página em alguns minutos",
-                    link: "https://nerdatico.com.br",
-                    image: "imagens/error.png"
-                },
-                {
-                    title: "Verifique sua conexão com a internet",
-                    link: "https://nerdatico.com.br",
-                    image: "imagens/cloud.png"
-                }
-            ];
-            
-            console.log('Carregando dados estáticos como fallback...');
-            
-            fallbackArticles.forEach(article => {
-                const post = document.createElement('a');
-                post.href = article.link;
-                post.target = '_blank';
-                post.className = 'post';
-                post.style.backgroundImage = `url(${article.image})`;
-                post.setAttribute('aria-label', `Artigo: ${article.title}`);
-                post.innerHTML = `<div class="post-footer"><strong>${article.title}</strong></div>`;
-                grid.appendChild(post);
-            });
-            
-            errorDiv.innerHTML = `
-                <div style="margin-bottom: 20px; color: #ff6b35;">
-                    <strong>⚠️ Modo Offline</strong><br>
-                    Não foi possível carregar o feed RSS. Mostrando conteúdo de fallback.
-                </div>
-                <div style="font-size: 14px; color: #666;">
-                    <button onclick="location.reload()" style="
-                        background: #667eea; 
-                        color: white; 
-                        border: none; 
-                        padding: 10px 20px; 
-                        border-radius: 5px; 
-                        cursor: pointer;
-                        font-size: 14px;
-                    ">🔄 Tentar Novamente</button>
-                </div>
-            `;
-            errorDiv.style.display = 'block';
         }
         
         // Função auxiliar: Extrai src da primeira <img> na description HTML (fallback)
@@ -480,6 +392,21 @@
                 document.body.classList.add('dark-mode');
                 themeToggle.textContent = '☀️';
             }
+        }
+        
+        // Função para tentar carregar novamente
+        function retryLoad() {
+            const grid = document.getElementById('grid');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            
+            // Limpa o grid e esconde o erro
+            grid.innerHTML = '';
+            errorDiv.style.display = 'none';
+            loading.style.display = 'flex';
+            
+            // Tenta carregar novamente
+            loadArticlesFromRSS();
         }
         
         // Inicia o carregamento
